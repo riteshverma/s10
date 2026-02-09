@@ -54,6 +54,7 @@ Return your result in the following structured format:
 ```
 
 Use booleans only for `original_goal_achieved` and `local_goal_achieved`.
+If `analysis_hint` is provided in the input, follow it to re-evaluate your reasoning and confidence.
 Think deeply before you fill in the reasoning. Your output will guide whether future steps are needed, retried, or skipped.
 Keep descriptions short. Keep output tight and purpose-driven. 
 If you see that in past a tool has failed, recommend not to use that tool anymore! VERY IMPORTANT to provide the NAME of the tool that failed.

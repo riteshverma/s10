@@ -159,9 +159,12 @@ For Middle steps:
 * End every code block with `return`.
 * **Do not access variables across steps.**
 * If an answer can be derived without tool use, prefer `"CONCLUDE"`.
-* For analytical or summarization tasks (e.g., summarizing markdown or extracted text), write:
-  "code": "result = """<your actual summary or insight here>"""\nreturn result"
-  Replace <your actual summary or insight here> with your real generated analysis based on the input. Make 1000% sre you are not hallucinating here and this is correct informative response.
+* For summarization tasks, **prefer the `summarize_sources` tool** if it is available.
+  Example:
+  "code": "result = summarize_sources(query, sources, 180, \"paragraph\")\nreturn result"
+* Only when no summarization tool exists, you may summarize directly in code:
+  "code": "result = \"\"\"<your actual summary or insight here>\"\"\"\nreturn result"
+  Replace <your actual summary or insight here> with your real generated analysis based on the input.
 * You must pass arguments to each tool **exactly as defined** — including argument **types** and **count**.
 * Do **not assume**, transform, or reinterpret the expected input. For example, if a tool requires a `string`, do not pass a list of characters or vice versa.
 * If a tool failed once, do not use it again. 

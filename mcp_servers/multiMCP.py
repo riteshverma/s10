@@ -3,6 +3,7 @@ import sys
 import asyncio
 import json
 import time
+from agent.runtime_config import get_tool_retry_settings
 from typing import Optional, Any, List, Dict
 from inspect import signature
 from mcp import ClientSession, StdioServerParameters
@@ -51,6 +52,7 @@ class MultiMCP:
         self.server_tools: Dict[str, List[Any]] = {}
         self.tool_failure_counts: Dict[str, int] = {}
         self.banned_tools: set[str] = set()
+        self.retry_settings = get_tool_retry_settings()
 
     async def initialize(self):
         print("in MultiMCP initialize")
@@ -164,17 +166,32 @@ class MultiMCP:
         error_msg = None
         result = None
         try:
-            result = await self.call_tool(tool_name, params)
-            if hasattr(result, "isError") and getattr(result, "isError", False):
-                status = "error"
+            max_attempts = max(1, int(self.retry_settings.get("max_attempts", 3)))
+            backoff_ms = int(self.retry_settings.get("backoff_ms", 250))
+            backoff_mult = float(self.retry_settings.get("backoff_multiplier", 2.0))
+
+            last_exc = None
+            for attempt in range(1, max_attempts + 1):
                 try:
-                    error_msg = result.content[0].text.strip()
-                except Exception:
-                    error_msg = str(result)
-        except Exception as e:
-            status = "error"
-            error_msg = str(e)
-            raise
+                    result = await self.call_tool(tool_name, params)
+                    if hasattr(result, "isError") and getattr(result, "isError", False):
+                        try:
+                            error_msg = result.content[0].text.strip()
+                        except Exception:
+                            error_msg = str(result)
+                        raise RuntimeError(error_msg)
+                    status = "success"
+                    error_msg = None
+                    break
+                except Exception as e:
+                    status = "error"
+                    error_msg = str(e)
+                    last_exc = e
+                    if attempt < max_attempts:
+                        sleep_s = (backoff_ms / 1000) * (backoff_mult ** (attempt - 1))
+                        await asyncio.sleep(sleep_s)
+                        continue
+                    raise last_exc
         finally:
             duration_ms = (time.perf_counter() - start_time) * 1000
             log_tool_performance(build_tool_performance_entry(

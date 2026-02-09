@@ -136,3 +136,32 @@
 {"timestamp": "2026-01-17T18:49:32Z", "tool_name": "power", "status": "success", "duration_ms": 1455.11, "args_count": 2, "error": null}
 {"timestamp": "2026-01-17T18:49:36Z", "tool_name": "multiply", "status": "error", "duration_ms": 1127.39, "args_count": 2, "error": "Error executing tool multiply: can't multiply sequence by non-int of type 'str'"}
 {"timestamp": "2026-01-17T18:49:49Z", "tool_name": "power", "status": "success", "duration_ms": 1187.97, "args_count": 2, "error": null}
+{"timestamp": "2026-01-18T14:06:00Z", "tool_name": "duckduckgo_search_results", "status": "success", "duration_ms": 2320.58, "args_count": 2, "error": null}
+{"timestamp": "2026-01-18T14:07:25Z", "tool_name": "duckduckgo_search_results", "status": "success", "duration_ms": 2030.77, "args_count": 2, "error": null}
+{"timestamp": "2026-01-18T14:08:13Z", "tool_name": "duckduckgo_search_results", "status": "success", "duration_ms": 2064.84, "args_count": 2, "error": null}
+{"timestamp": "2026-01-18T14:08:26Z", "tool_name": "search_stored_documents_rag", "status": "success", "duration_ms": 9704.95, "args_count": 1, "error": null}
+{"timestamp": "2026-01-18T14:08:32Z", "tool_name": "duckduckgo_search_results", "status": "success", "duration_ms": 1894.6, "args_count": 2, "error": null}
+{"timestamp": "2026-01-18T14:15:12Z", "tool_name": "duckduckgo_search_results", "status": "success", "duration_ms": 1711.19, "args_count": 2, "error": null}
+{"timestamp": "2026-01-18T14:15:23Z", "tool_name": "search_stored_documents_rag", "status": "success", "duration_ms": 7372.63, "args_count": 1, "error": null}
+{"timestamp": "2026-01-18T14:15:29Z", "tool_name": "duckduckgo_search_results", "status": "success", "duration_ms": 1910.04, "args_count": 2, "error": null}
+{"timestamp": "2026-01-18T14:17:46Z", "tool_name": "duckduckgo_search_results", "status": "success", "duration_ms": 1775.24, "args_count": 2, "error": null}
+{"timestamp": "2026-01-18T14:17:52Z", "tool_name": "search_stored_documents_rag", "status": "success", "duration_ms": 7453.8, "args_count": 1, "error": null}
+{"timestamp": "2026-01-18T14:17:58Z", "tool_name": "duckduckgo_search_results", "status": "success", "duration_ms": 1812.61, "args_count": 2, "error": null}
+{"timestamp": "2026-01-18T14:21:11Z", "tool_name": "duckduckgo_search_results", "status": "success", "duration_ms": 1862.02, "args_count": 2, "error": null}
+{"timestamp": "2026-01-18T14:21:23Z", "tool_name": "search_stored_documents_rag", "status": "success", "duration_ms": 7838.27, "args_count": 1, "error": null}
+{"timestamp": "2026-01-18T14:21:35Z", "tool_name": "search_stored_documents_rag", "status": "success", "duration_ms": 7752.08, "args_count": 1, "error": null}
+{"timestamp": "2026-01-18T14:22:37Z", "tool_name": "duckduckgo_search_results", "status": "success", "duration_ms": 2601.86, "args_count": 2, "error": null}
+{"timestamp": "2026-01-18T14:22:54Z", "tool_name": "summarize_sources", "status": "success", "duration_ms": 5942.54, "args_count": 4, "error": null}
+{"timestamp": "2026-01-18T14:25:03Z", "tool_name": "duckduckgo_search_results", "status": "success", "duration_ms": 1907.04, "args_count": 2, "error": null}
+{"timestamp": "2026-01-18T14:25:20Z", "tool_name": "summarize_sources", "status": "success", "duration_ms": 5846.06, "args_count": 4, "error": null}
+{"timestamp": "2026-01-18T14:26:32Z", "tool_name": "duckduckgo_search_results", "status": "success", "duration_ms": 1725.78, "args_count": 2, "error": null}
+{"timestamp": "2026-01-18T14:26:49Z", "tool_name": "summarize_sources", "status": "success", "duration_ms": 5876.22, "args_count": 4, "error": null}
+{"timestamp": "2026-02-09T22:38:20Z", "tool_name": "duckduckgo_search_results", "status": "success", "duration_ms": 2067.94, "args_count": 2, "error": null}
+{"timestamp": "2026-02-09T22:38:39Z", "tool_name": "summarize_sources", "status": "success", "duration_ms": 3945.11, "args_count": 4, "error": null}
+{"timestamp": "2026-02-09T22:40:35Z", "tool_name": "duckduckgo_search_results", "status": "success", "duration_ms": 2164.29, "args_count": 2, "error": null}
+{"timestamp": "2026-02-09T22:40:39Z", "tool_name": "search_stored_documents_rag", "status": "success", "duration_ms": 5927.75, "args_count": 1, "error": null}
+{"timestamp": "2026-02-09T22:40:52Z", "tool_name": "duckduckgo_search_results", "status": "success", "duration_ms": 2054.9, "args_count": 2, "error": null}
+{"timestamp": "2026-02-09T22:40:54Z", "tool_name": "search_stored_documents_rag", "status": "success", "duration_ms": 4114.91, "args_count": 1, "error": null}
+{"timestamp": "2026-02-09T22:41:07Z", "tool_name": "summarize_sources", "status": "error", "duration_ms": 12589.07, "args_count": 4, "error": "Error executing tool summarize_sources: 1 validation error for summarize_sourcesArguments\ninput.sources.1\n  Input should be a valid string [type=string_type, input_value={'content': [{'type': 'te...1]\"]}, 'isError': False}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/string_type"}
+{"timestamp": "2026-02-09T22:43:06Z", "tool_name": "duckduckgo_search_results", "status": "success", "duration_ms": 2044.54, "args_count": 2, "error": null}
+{"timestamp": "2026-02-09T22:43:08Z", "tool_name": "search_stored_documents_rag", "status": "success", "duration_ms": 4081.6, "args_count": 1, "error": null}

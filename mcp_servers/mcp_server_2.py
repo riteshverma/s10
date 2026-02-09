@@ -13,7 +13,7 @@ from pathlib import Path
 import requests
 from markitdown import MarkItDown
 import time
-from models import AddInput, AddOutput, SqrtInput, SqrtOutput, StringsToIntsInput, StringsToIntsOutput, ExpSumInput, ExpSumOutput, PythonCodeInput, PythonCodeOutput, UrlInput, FilePathInput, MarkdownInput, MarkdownOutput, ChunkListOutput, SearchDocumentsInput
+from models import AddInput, AddOutput, SqrtInput, SqrtOutput, StringsToIntsInput, StringsToIntsOutput, ExpSumInput, ExpSumOutput, PythonCodeInput, PythonCodeOutput, UrlInput, FilePathInput, MarkdownInput, MarkdownOutput, ChunkListOutput, SearchDocumentsInput, SummarizeInput, SummarizeOutput
 from tqdm import tqdm
 import hashlib
 from pydantic import BaseModel
@@ -115,6 +115,51 @@ def search_stored_documents_rag(input: SearchDocumentsInput) -> list[str]:
         return results
     except Exception as e:
         return [f"ERROR: Failed to search: {str(e)}"]
+
+
+@mcp.tool()
+def summarize_sources(input: SummarizeInput) -> SummarizeOutput:
+    """Summarize multiple sources into a single concise response."""
+    if not input.sources:
+        return SummarizeOutput(summary="No sources provided to summarize.")
+
+    sources_text = "\n\n".join(f"[Source {i+1}]\n{src}" for i, src in enumerate(input.sources))
+    requested_format = input.format.strip().lower()
+    if requested_format not in {"paragraph", "bullets"}:
+        requested_format = "paragraph"
+
+    prompt = f"""
+You are a careful summarizer. Combine the sources into a single, coherent summary.
+- Use only the provided sources.
+- Deduplicate repeated facts.
+- Keep it under {input.max_words} words.
+- If sources are thin or conflicting, say so briefly.
+
+User query: {input.query}
+
+Format: {requested_format}
+
+Sources:
+{sources_text}
+""".strip()
+
+    try:
+        result = requests.post(OLLAMA_CHAT_URL, json={
+            "model": PHI_MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": False,
+            "options": {
+                "temperature": 0.0,
+                "top_p": 1.0,
+                "top_k": 1,
+                "seed": 0
+            }
+        })
+        result.raise_for_status()
+        summary = result.json().get("message", {}).get("content", "").strip()
+        return SummarizeOutput(summary=summary or "No summary produced.")
+    except Exception as e:
+        return SummarizeOutput(summary=f"ERROR: Summarization failed: {e}")
 
 
 def caption_image(img_url_or_path: str) -> str:

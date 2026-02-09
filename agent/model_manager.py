@@ -4,6 +4,7 @@ import yaml
 import requests
 from pathlib import Path
 from google import genai
+from agent.runtime_config import gemini_generation_config, get_llm_generation_settings
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -38,7 +39,8 @@ class ModelManager:
     def _gemini_generate(self, prompt: str) -> str:
         response = self.client.models.generate_content(
             model=self.model_info["model"],
-            contents=prompt
+            contents=prompt,
+            config=gemini_generation_config()
         )
 
         # ✅ Safely extract response text
@@ -51,9 +53,22 @@ class ModelManager:
                 return str(response)
 
     def _ollama_generate(self, prompt: str) -> str:
+        settings = get_llm_generation_settings()
+        options = {
+            "temperature": settings.get("temperature", 0.0),
+            "top_p": settings.get("top_p", 1.0),
+            "top_k": settings.get("top_k", 1),
+        }
+        if "seed" in settings:
+            options["seed"] = settings.get("seed")
         response = requests.post(
             self.model_info["url"]["generate"],
-            json={"model": self.model_info["model"], "prompt": prompt, "stream": False}
+            json={
+                "model": self.model_info["model"],
+                "prompt": prompt,
+                "stream": False,
+                "options": options
+            }
         )
         response.raise_for_status()
         return response.json()["response"].strip()

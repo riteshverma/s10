@@ -21,13 +21,35 @@ memory:
     structure: "date"  # Indicates we're using date-based directory structure
 
 llm:
-  text_generation: gemini #gemini or phi4 or gemma3:12b or qwen2.5:32b-instruct-q4_0 
+  text_generation: gemini #gemini or phi4 or gemma3:12b or qwen2.5:32b-instruct-q4_0
   embedding: nomic
+  deterministic: true
+  generation:
+    temperature: 0.0
+    top_p: 1.0
+    top_k: 1
+    max_output_tokens: 1024
+    candidate_count: 1
+    seed: 0
 
 persona:
   tone: concise
   verbosity: low
   behavior_tags: [rational, focused, tool-using]
+
+tools:
+  retry:
+    max_attempts: 3
+    backoff_ms: 250
+    backoff_multiplier: 2.0
+
+execution:
+  deterministic_seed: 0
+
+# Perception: retries to raise confidence (non-decreasing within same step only)
+perception:
+  max_retries: 5
+  early_exit_no_improvement_attempts: 2
 
 mcp_servers:
   - id: math

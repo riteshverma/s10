@@ -4,6 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from google import genai
 from google.genai.errors import ServerError
+from agent.runtime_config import gemini_generation_config
 import re
 from mcp_servers.multiMCP import MultiMCP
 import ast
@@ -35,7 +36,8 @@ class Decision:
         try:
             response = self.client.models.generate_content(
                 model="gemini-2.0-flash",
-                contents=full_prompt
+                contents=full_prompt,
+                config=gemini_generation_config()
             )
         except ServerError as e:
             print(f"🚫 Decision LLM ServerError: {e}")

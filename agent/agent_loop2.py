@@ -2,6 +2,7 @@ import os
 import uuid
 import json
 import datetime
+import ast
 from perception.perception import Perception
 from decision.decision import Decision
 from action.executor import run_user_code
@@ -13,6 +14,7 @@ from mcp_servers.multiMCP import MultiMCP
 from agent.context import AgentContext
 from agent.critic_agent import CriticAgent
 from memory.blackboard import post_to_blackboard, get_blackboard
+from agent.runtime_config import get_perception_retry_settings
 
 
 GLOBAL_PREVIOUS_FAILURE_STEPS = 3
@@ -87,14 +89,60 @@ class AgentLoop:
 
     def run_perception(self, query, memory_results, session_memory=None, snapshot_type="user_query", current_plan=None, tool_perf_summary=None):
         combined_memory = (memory_results or []) + (session_memory or [])
-        perception_input = self.perception.build_perception_input(
-            raw_input=query, 
-            memory=combined_memory, 
-            current_plan=current_plan, 
-            snapshot_type=snapshot_type,
-            tool_performance_summary=tool_perf_summary
-        )
-        perception_result = self.perception.run(perception_input)
+        retry_settings = get_perception_retry_settings()
+        max_attempts = retry_settings["max_attempts"]
+        early_exit_after = retry_settings["early_exit_after_no_improvement"]
+
+        analysis_hint = ""
+        attempts = 0
+        best_confidence_this_run = -1.0  # within this step only: enforce non-decreasing
+        no_improvement_count = 0
+        perception_result = None
+
+        while attempts < max_attempts:
+            perception_input = self.perception.build_perception_input(
+                raw_input=query,
+                memory=combined_memory,
+                current_plan=current_plan,
+                snapshot_type=snapshot_type,
+                tool_performance_summary=tool_perf_summary,
+                analysis_hint=analysis_hint
+            )
+            perception_result = self.perception.run(perception_input)
+            try:
+                confidence = float(perception_result.get("confidence", 0.0))
+            except (TypeError, ValueError):
+                confidence = 0.0
+
+            # Non-decreasing only within this run (same step); do not carry across steps
+            if confidence < best_confidence_this_run:
+                confidence = best_confidence_this_run
+                perception_result["confidence"] = confidence
+                perception_result["local_reasoning"] = (
+                    f"{perception_result.get('local_reasoning', '')} | "
+                    "Confidence held steady (non-decreasing within this step)."
+                ).strip()
+                no_improvement_count += 1
+            else:
+                best_confidence_this_run = confidence
+                no_improvement_count = 0
+
+            if confidence >= 1.0:
+                break
+
+            attempts += 1
+            if attempts >= max_attempts:
+                break
+            # Early exit: no point retrying if confidence hasn't improved for N attempts
+            if no_improvement_count >= early_exit_after:
+                break
+
+            analysis_hint = (
+                "Reason more deeply about whether this step truly answers the user. "
+                "If the result is sufficient, increase confidence toward 1.0; "
+                "if it is incomplete, keep confidence below 1.0 and explain why."
+            )
+
         print("\n[Perception Result]:")
         print(json.dumps(perception_result, indent=2, ensure_ascii=False))
         post_to_blackboard(self.agent_name, f"perception: {perception_result.get('solution_summary', '')}")
@@ -257,6 +305,9 @@ class AgentLoop:
     def get_next_step(self, session, query, step, retries):
         next_index = step.index + 1
         total_steps = len(session.plan_versions[-1]["plan_text"])
+        auto_step = self.build_auto_summarize_step(session, query, step)
+        if auto_step:
+            return auto_step, retries
         if next_index < total_steps:
             decision_output = self.decision.run({
                 "plan_mode": "mid_session",
@@ -284,6 +335,77 @@ class AgentLoop:
         else:
             print("\n✅ No more steps.")
             return None, retries
+
+    def build_auto_summarize_step(self, session, query, step):
+        if not step.perception:
+            return None
+        if step.perception.original_goal_achieved or not step.perception.local_goal_achieved:
+            return None
+        if not self.has_tool("summarize_sources"):
+            return None
+        if self.plan_has_summary(session):
+            return None
+
+        sources = self.extract_sources(step.execution_result)
+        if not sources:
+            return None
+
+        plan_text = session.plan_versions[-1]["plan_text"] + [
+            "Step {}: Summarize collected sources into a concise response.".format(step.index + 1)
+        ]
+        code = (
+            "sources = {sources}\n"
+            "result = summarize_sources({query}, sources, 180, \"paragraph\")\n"
+            "return result"
+        ).format(
+            sources=json.dumps(sources, ensure_ascii=False),
+            query=json.dumps(query, ensure_ascii=False),
+        )
+        summarize_step = Step(
+            index=step.index + 1,
+            description="Summarize collected sources using summarize_sources",
+            type="CODE",
+            code=ToolCode(tool_name="raw_code_block", tool_arguments={"code": code}),
+        )
+        session.add_plan_version(plan_text, [summarize_step])
+        print(f"\n[Decision Plan Text: V{len(session.plan_versions)}]:")
+        for line in session.plan_versions[-1]["plan_text"]:
+            print(f"  {line}")
+        post_to_blackboard(self.agent_name, "decision: auto-summarize step inserted")
+        print(session.render_plan_history())
+        return summarize_step
+
+    def plan_has_summary(self, session) -> bool:
+        if not session.plan_versions:
+            return False
+        for line in session.plan_versions[-1]["plan_text"]:
+            if "summar" in line.lower():
+                return True
+        return False
+
+    def has_tool(self, tool_name: str) -> bool:
+        return any(tool.name == tool_name for tool in self.multi_mcp.get_all_tools())
+
+    def extract_sources(self, execution_result) -> list[str]:
+        if isinstance(execution_result, dict):
+            value = execution_result.get("result")
+        else:
+            value = execution_result
+        if value is None:
+            return []
+        if isinstance(value, list):
+            return [str(v) for v in value if v is not None]
+        if isinstance(value, str):
+            trimmed = value.strip()
+            if trimmed.startswith("[") and trimmed.endswith("]"):
+                try:
+                    parsed = ast.literal_eval(trimmed)
+                    if isinstance(parsed, list):
+                        return [str(v) for v in parsed if v is not None]
+                except Exception:
+                    pass
+            return [value]
+        return [str(value)]
 
     def handle_plan_failure(self, session, query, step, retries):
         print(f"\n🧭 Plan failed after {retries} retries. U1 in the loop required.")

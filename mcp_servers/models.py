@@ -147,6 +147,17 @@ class MarkdownOutput(BaseModel):
 class ChunkListOutput(BaseModel):
     chunks: List[str]
 
+# --- Summarization Tools ---
+
+class SummarizeInput(BaseModel):
+    query: str
+    sources: List[str]
+    max_words: int = Field(default=180, description="Target word limit")
+    format: str = Field(default="paragraph", description="paragraph or bullets")
+
+class SummarizeOutput(BaseModel):
+    summary: str
+
 # --- Memory Search ---
 
 class SearchMemoryInput(BaseModel):

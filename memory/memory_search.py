@@ -25,7 +25,7 @@ class MemorySearch:
 
     def _load_queries(self) -> List[Dict]:
         memory_entries = []
-        all_json_files = list(self.logs_path.rglob("*.json"))
+        all_json_files = sorted(self.logs_path.rglob("*.json"), key=lambda p: str(p).lower())
         print(f"🔍 Found {len(all_json_files)} JSON file(s) in '{self.logs_path}'")
 
         for file in all_json_files:

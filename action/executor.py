@@ -5,7 +5,9 @@ import time
 import builtins
 import textwrap
 import re
+import random
 from datetime import datetime
+from agent.runtime_config import get_execution_seed, is_deterministic
 
 # ───────────────────────────────────────────────────────────────
 # CONFIG
@@ -85,6 +87,8 @@ async def run_user_code(code: str, multi_mcp) -> dict:
     start_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     try:
+        if is_deterministic():
+            random.seed(get_execution_seed())
         func_count = count_function_calls(code)
         if func_count > MAX_FUNCTIONS:
             return {
